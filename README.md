@@ -1,2 +1,2 @@
-# Gr-ficos-librer-a-echarts4r
+# Graficos libreria echarts4r
 Análisis exploratorio de datos de producción de leche mediante la librería echarts4r.
