@@ -1,0 +1,523 @@
+---
+title: "Gráficos librería echarts4r"
+author: "Jonatan Velez"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+    css: theme.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+klippy::klippy()
+```
+
+
+# Librerías
+
+- `pedigreemm`: Conjunto de datos
+- `dplyr`: Manipulación de datos
+- `echarts4r` : Graficación
+
+
+```{r}
+library(pedigreemm)
+library(dplyr)
+library(echarts4r)
+klippy::klippy()
+```
+
+# Conjunto de datos
+
+## Descripción
+
+Registros de la producción de leche de 3397 lactancias desde la primera hasta la cincuentena Holstein de parto. Estas fueron 1,359 vacas, hijas de 38 toros en 57 hatos. Los datos se descargaron del sitio de Internet del [USDA](https://data.nal.usda.gov/ "usda"){target="_blank"}. Todos los registros de lactancia representan vacas con al menos 100 días en leche, con un promedio de 347 días. La producción de leche varió de 4.065 a 19.345 kg estimada para 305 días, con un promedio de 11.636 kg. Hubo 1.314, 1.006, 640, 334 y 103 registros de animales de primera a quinta lactancia
+
+#### Formato
+
+Un marco de datos con 3397 observaciones sobre las siguientes 9 variables.
+
+
+- `id`: Identificador numérico de la vaca
+- `lact`: Número de lactancias para las que se mide la producción
+- `herd`: hato
+- `sire`: Padre
+- `dim`: Número de días en leche para esa lactancia
+- `milk`: Producción de leche estimada en 305 días       
+- `fat`: Producción de grasa estimada en 305 días
+- `prot`: Producción de proteínas estimada en 305 días       
+- `scs`: Puntuación de células somáticas
+
+```{r klippy, include=TRUE}
+Milk <- milk %>%
+  mutate(lact = factor(lact))
+
+Milk
+```
+
+<br>
+
+# Exploración
+
+## Boxplot
+
+#### Número de días en leche
+
+```{r}
+Milk %>%
+  e_charts() %>%
+  e_boxplot(dim, outliers = FALSE) %>%
+  e_visual_map(scale = e_scale,
+               inRange = list(color = c("#edafda", "#eeeeee", "#59c4e6"))) %>%
+  e_image_g(
+    left = 90,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  ) %>%
+  e_tooltip(trigger = "axis")
+```
+
+#### Producción proteina por lactancia
+
+```{r}
+Milk %>% 
+  group_by(lact) %>% 
+  e_charts() %>% 
+  e_boxplot(prot, itemStyle = list(color = "#77db75" , 
+                                   opacity = 0.5)) %>%
+  e_tooltip(trigger = "axis") %>%
+ #e_visual_map(scale = e_scale,  itemStyle = list(color = "blue")) %>%
+  e_image_g(
+    left = 110,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  ) %>% 
+  e_axis_labels(x = "Lactancia", y = "Proteina") 
+```
+
+## Histograma
+
+#### Distribución de la producción de leche
+
+```{r}
+Milk %>%
+  e_charts() %>%
+  e_histogram(milk, name = "Histograma") %>%
+  e_density(
+    milk,
+    areaStyle = list(opacity = 0.4),
+    smooth = TRUE,
+    name = "Densidad",
+    y_index = 1
+  ) %>%
+  e_tooltip(trigger = "axis") %>%
+  e_mark_line(
+    data = list(xAxis = mean(Milk$milk)),
+    title = "Media",
+    itemStyle = list(color = "darkred")
+  ) %>%
+  e_image_g(
+    left = 100,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  )
+```
+
+## Dispersión
+
+#### Contenido grasa según la producción de leche y proteina 
+
+Diagrama de dispersión de un solo eje (`singleAxis`)
+
+```{r}
+Milk %>%
+  mutate(Grasa = fat) %>%
+  e_charts(milk, height = 200) %>%
+  e_single_axis(bottom = 40) %>%
+  e_scatter(Grasa, # Valor
+            prot, # Tamaño círculos
+            coord_system = "singleAxis") %>%
+  e_legend(left = "left", bottom = "center")  %>%
+  e_tooltip(formatter = e_tooltip_pointer_formatter("currency"),
+            axisPointer = list(type = "cross")) %>%
+  e_datazoom(x_index = 0) %>%
+  e_image_g(
+    left = 70,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  )
+```
+
+
+#### Producción leche y proteina
+
+```{r}
+Milk %>%
+  e_charts(milk) %>%
+  e_scatter(prot, symbol_size = 8) %>%
+  e_tooltip(formatter = e_tooltip_pointer_formatter("currency"),
+            axisPointer = list(type = "cross")) %>%
+  e_axis_labels(x = "Leche", y = "Proteina") %>%
+  e_datazoom(x_index = 0, type = "slider") %>%
+  e_legend(FALSE) %>%
+  e_image_g(
+    left = 100,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  )
+```
+
+#### Relación producción leche y contenido de grasa
+
+```{r}
+Milk %>%
+  e_charts(milk) %>%
+  e_scatter(fat, name = "Grasa") %>%
+  e_axis_labels(x = "Leche",
+                y = "Grasa") %>%
+  e_lm(fat ~ milk, name = "Regresión Lineal") %>%
+  e_tooltip(formatter = e_tooltip_pointer_formatter("currency"),
+            axisPointer = list(type = "cross")) %>% 
+  e_datazoom(x_index = 0, type = "slider")  %>%
+  e_image_g(
+    left = 95,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  ) 
+```
+
+#### Relación entre contenido de proteina y células somáticas con el número de días en leche
+
+```{r}
+Milk %>%
+  mutate(DIM = dim,
+         SCS = scs,
+         Proteina = prot) %>%
+  e_charts(DIM) %>%
+  e_scatter(Proteina, SCS) %>%
+  e_effect_scatter(SCS, Proteina, y_index = 1) %>%
+  e_grid(index = c(0, 1)) %>%
+  e_tooltip() %>%
+  e_image_g(
+    left = 95,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  )
+```
+
+## Gráfico barras
+
+#### Producción leche por hato
+
+```{r}
+Milk %>%
+  mutate(Leche = milk) %>% 
+  e_charts(herd) %>%
+  e_bar(Leche) %>% 
+  e_axis_labels(x = "Hato", y = " ") %>% 
+  e_tooltip(formatter = e_tooltip_pointer_formatter("currency"),
+            axisPointer = list(type = "cross")) %>% 
+    e_image_g(
+    left = 95,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  )
+```
+
+#### Promedio células somáticas por lactancia
+
+```{r}
+Milk %>% group_by(lact, scs) %>%
+  summarise(promedio = mean(milk)) %>% 
+  e_charts(lact) %>%
+  e_bar(promedio,  stack = "grp") %>% 
+  e_axis_labels(x = "Lactancia", y = "SCS") %>% 
+  e_tooltip(formatter = e_tooltip_pointer_formatter("currency"),
+            axisPointer = list(type = "cross")) %>% 
+    e_image_g(
+    left = 95,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  )
+```
+
+#### Grasa y proteina por lactancia 
+
+```{r}
+Milk %>%
+  mutate(Grasa = fat,
+         Proteina = prot) %>%
+  e_charts(lact) %>%
+  e_bar(Proteina, stack = "grp") %>%
+  e_bar(Grasa, stack = "grp") %>%
+  e_axis_labels(x = "Lactancia", y = " ")  %>%
+  e_tooltip(formatter = e_tooltip_pointer_formatter("currency"),
+            axisPointer = list(type = "cross")) %>%
+  e_image_g(
+    left = 95,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  )
+```
+
+#### Días en leche  y recuento células somáticas según el padre (Promedios)
+
+```{r}
+Milk %>%
+  group_by(sire) %>%
+  summarise(DIM = mean(prot),
+            SCS = mean(dim)) %>%
+  e_charts(sire) %>%
+  e_bar(DIM) %>%
+  e_step(SCS) %>%
+  e_axis_labels(x = "Padre") %>%
+  e_image_g(
+    left = 95,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  ) %>%
+  e_tooltip(formatter = e_tooltip_pointer_formatter("currency"),
+            axisPointer = list(type = "cross")) %>%
+  e_datazoom()
+```
+
+
+## Grafico de lineas
+
+#### Promedio células somáticas según el padre
+
+```{r}
+Milk %>%
+  group_by(sire) %>%
+  summarise(
+    `Promedio csc` = mean(scs),
+    scs_1 = mean(scs) - sd(scs),
+    scs_2 = mean(scs) + sd(scs)
+  ) %>%
+  e_charts(sire) %>%
+  e_line(`Promedio csc`) %>%
+  e_band(scs_1, scs_2) %>%
+  e_axis_labels(x = "Padre", y = "CSC") %>%
+  e_tooltip(axisPointer = list(type = "cross")) %>%
+  e_datazoom(x_index = 0, type = "slider") %>%
+  e_image_g(
+    left = 95,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  )
+```
+
+
+#### Producción de leche y contenido de grasa por lactancia
+
+```{r}
+Milk %>%
+  group_by(lact) %>%
+  e_charts(milk) %>%
+  e_line(fat) %>%
+  e_facet(rows = 3,
+          cols = 2,
+          legend_space = 12) %>%
+  e_image_g(
+    left = 55,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  ) %>%
+  e_axis_labels(x = "Leche", y = "Grasa") 
+```
+
+#### Promedio contenido de grasa y proteina según el hato
+
+```{r}
+Milk %>%
+  group_by(herd) %>%
+  summarise(
+    Grasa = mean(fat),
+    Proteina = mean(prot)
+  ) %>%
+  e_charts(herd) %>%
+  e_line(Grasa) %>%
+  e_area(Proteina) %>%
+  e_axis_labels(x = "Hato") %>%
+  e_image_g(
+    left = 95,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  ) %>%
+  e_y_axis(nameLocation = "center",
+           axisPointer = list(type = "dotted")) %>%
+  e_datazoom(y_index = 0, type = "slider")
+```
+
+## Gráfico correlación
+
+```{r}
+Milk %>%
+  select(where(is.numeric)) %>%
+  mutate(
+    DIM = dim,
+    Leche = milk,
+    Grasa = fat,
+    Proteina = prot,
+    SCS = scs
+  ) %>%
+  select(-c(1:5)) %>%
+  cor() %>%
+  e_charts() %>%
+  e_correlations(order = "hclust",
+                 inRange = list(color = c("#edafda", "#eeeeee", "#59c4e6"))) %>%
+  e_tooltip() %>%
+  e_image_g(
+    left = 75,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  )
+```
+
+## Gráfico paralelo
+
+#### Promedio proteina, grasas y células somáticas por lactancia
+
+```{r}
+Milk %>%
+  group_by(lact) %>%
+  summarise(
+    Leche = mean(milk),
+    Grasa = mean(fat),
+    Proteina = mean(prot),
+    CSC = mean(scs),
+  ) %>% 
+  mutate(Lact = lact) %>% 
+  e_charts() %>%
+  e_parallel(Lact,
+             Leche,
+             Grasa,
+             Proteina,
+             CSC,
+            opts = list(smooth = TRUE)) %>%
+  e_image_g(
+    left = 95,
+    top = -15,
+    z = -999,
+    style = list(
+      image = "https://st3.depositphotos.com/1027110/36470/v/450/depositphotos_364707606-stock-illustration-holstein-friesian-cow-breeds-of.jpg",
+      width = 90,
+      height = 90,
+      opacity = 0.8
+    )
+  ) %>% 
+  e_tooltip(axisPointer = list(type = "cross"))
+```
+
+
+
+
+- Referencias:
+
+  - [echarts4r](https://echarts4r.john-coene.com/index.html){target="_blank"}
+  
+  - [Apache ECharts](https://echarts.apache.org/en/index.html){target="_blank"}
+  
+  - [Notas sobre cómo dibujar un gráfico de líneas con el paquete echarts4r en R](https://yuanfan.vercel.app/posts/e-line/){target="_blank"}
+  
+  - [LatinR 2020](https://github.com/tidymodels-latam-workshops){target="_blank"}
+
+
+
+
+
